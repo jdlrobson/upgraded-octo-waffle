@@ -18,7 +18,9 @@ export default React.createClass({
     var self = this;
     api.getTrending( this.props.params.filter ).then( function ( data ) {
       var topics = data.map( function ( item ) {
-        return React.createElement(Topic, item);
+        item.key = item.id;
+        var obj = React.createElement(Topic, item);
+         return obj;
       } );
       self.setState({ topics: topics });
     } );
