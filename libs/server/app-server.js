@@ -5,6 +5,8 @@ import ReactDOMServer from 'react-dom/server'
 import express from 'express'
 import hogan from 'hogan-express'
 
+import NodeCache from 'node-cache';
+
 // Routes
 import routes from './../client/routes'
 
@@ -15,6 +17,9 @@ app.set('views', __dirname + '/views')
 
 app.use('/', express.static(__dirname + '/../../public/'))
 app.set('port', (process.env.PORT || 3000))
+
+// cache is valid for up to 10 minutes
+var shortLifeCache = new NodeCache( { stdTTL: 60 * 10, checkperiod: 60 * 10 } );
 
 var WikiSocketCollection = require( 'WikiSocketCollection' );
 var collection = new WikiSocketCollection( {
@@ -71,11 +76,22 @@ function annotate( p, wiki, limit ) {
   return res;
 }
 app.get('/api/trending/:filter?',(req, res) => {
+  var filter = req.params.filter || 'enwiki';
+  var cacheKey = 'trending/' + filter;
+
   res.status(200);
   res.setHeader('Content-Type', 'application/json');
 
-  var p = getSortedPages();
-  res.send( JSON.stringify( annotate( p, req.params.filter || 'enwiki', 100 ) ) );
+  shortLifeCache.get( cacheKey, function( err, responseText ) {
+    var responseText;
+    if ( err || !responseText ) {
+      responseText = JSON.stringify( {
+        results: annotate( getSortedPages(), filter, 100 ), ts: new Date()
+      } );
+      shortLifeCache.set( cacheKey, responseText );
+    }
+    res.send( responseText );
+  } );
 } )
 
 
