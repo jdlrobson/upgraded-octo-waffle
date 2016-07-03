@@ -27,7 +27,7 @@ var collection = new WikiSocketCollection( {
   project: '*.wikipedia.org',
   minPurgeTime: 20,
   maxLifeSpan: ( 60 * 24 ) * 7,
-  maxInactivity: 60 * 1,
+  maxInactivity: ( 60 * 24 ) * 7,
   minSpeed: 0.1
 } );
 
@@ -44,7 +44,7 @@ function getSortedPages() {
   } );
 }
 
-function annotate( p, wiki, limit ) {
+function annotate( p, filter, limit ) {
   var res = [];
   p.some( function ( item, i ) {
     if ( !item.wiki ) {
@@ -52,7 +52,7 @@ function annotate( p, wiki, limit ) {
     }
     if ( i >= limit ) {
       return true;
-    } else if ( wiki === '*' || item.wiki === wiki ) {
+    } else if ( filter && filter( item ) ) {
       var score =  calcScore( item );
       var speed = item.editsPerMinute();
 
@@ -75,9 +75,11 @@ function annotate( p, wiki, limit ) {
   } );
   return res;
 }
-app.get('/api/trending/:filter?',(req, res) => {
-  var filter = req.params.filter || 'enwiki';
-  var cacheKey = 'trending/' + filter;
+
+app.get('/api/trending/:wiki?',(req, res) => {
+  var fn;
+  var wiki = req.params.wiki || 'enwiki';
+  var cacheKey = 'trending/' + wiki;
 
   res.status(200);
   res.setHeader('Content-Type', 'application/json');
@@ -85,8 +87,11 @@ app.get('/api/trending/:filter?',(req, res) => {
   shortLifeCache.get( cacheKey, function( err, responseText ) {
     var responseText;
     if ( err || !responseText ) {
+      fn = function ( item ) {
+        return wiki === '*' || item.wiki === wiki;
+      };
       responseText = JSON.stringify( {
-        results: annotate( getSortedPages(), filter, 100 ), ts: new Date()
+        results: annotate( getSortedPages(), fn, 100 ), ts: new Date()
       } );
       shortLifeCache.set( cacheKey, responseText );
     }
