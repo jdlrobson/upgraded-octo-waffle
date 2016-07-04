@@ -1,9 +1,5 @@
-// webpack.config.js
-if(process.env.NODE_ENV === 'development'){
-  var loaders = ['react-hot','babel']
-} else {
-  var loaders = ['babel']
-}
+var ExtractTextPlugin = require('extract-text-webpack-plugin')
+
 module.exports = {
   devtool: 'eval',
   entry: './libs/client/app-client.js',
@@ -12,14 +8,18 @@ module.exports = {
     filename: 'bundle.js',
     publicPath: '/dist/'
   },
+  plugins: [
+    new ExtractTextPlugin('style.css', { allChunks: true })
+  ],
   module: {
     loaders: [
       {
         test: /\.js$/,
-        loaders: loaders,
+        loader: 'babel?presets[]=es2015&presets[]=react',
         exclude: /node_modules/
       },
-      { test: /\.css$/, loader: 'style-loader!css-loader' }
+      { test: /\.(gif|png|jpg)$/, loader: 'url?limit=25000' },
+      { test: /\.css$/, loader: ExtractTextPlugin.extract('style', 'css!autoprefixer') }
     ]
   }
 };

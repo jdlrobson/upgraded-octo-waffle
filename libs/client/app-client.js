@@ -6,6 +6,7 @@ import createBrowserHistory from 'history/lib/createBrowserHistory'
 const history = createBrowserHistory()
 
 import './main.css'
+import './mediawiki-bootstrap.css'
 
 // Routes
 import routes from './routes'
